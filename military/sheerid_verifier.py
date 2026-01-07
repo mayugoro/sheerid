@@ -238,6 +238,14 @@ class SheerIDVerifier:
                     "message": "Dokumen telah disubmit, menunggu review",
                     "data": step2_data,
                 }
+            elif current_step == "emailLoop":
+                logger.info("📧 Perlu verifikasi email")
+                return {
+                    "success": True,
+                    "pending": True,
+                    "message": "Silakan cek email untuk verifikasi. Setelah klik link di email, verifikasi akan selesai.",
+                    "data": step2_data,
+                }
             else:
                 logger.warning(f"⚠️ Status tidak jelas: {current_step}")
                 return {
