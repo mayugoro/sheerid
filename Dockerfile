@@ -1,10 +1,10 @@
-# 使用Python 3.11官方镜像
+# Gunakan image resmi Python 3.11
 FROM python:3.11-slim
 
-# 设置工作目录
+# Set working directory
 WORKDIR /app
 
-# 安装系统依赖（Playwright需要）
+# Install dependencies sistem (diperlukan Playwright)
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -31,32 +31,32 @@ RUN apt-get update && apt-get install -y \
     build-essential gcc pkg-config libcairo2-dev libpango1.0-dev libgdk-pixbuf-2.0-dev libffi-dev python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件
+# Salin file dependencies
 COPY requirements.txt .
 
-# 安装Python依赖（不使用缓存）
+# Install dependencies Python (tanpa cache)
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 安装Playwright浏览器
+# Install browser Playwright
 RUN playwright install chromium
 
-# 复制项目文件（.dockerignore会自动排除缓存）
+# Salin file project (.dockerignore akan otomatis exclude cache)
 COPY . .
 
-# 清理所有Python缓存（确保使用最新代码）
+# Bersihkan semua cache Python (pastikan menggunakan kode terbaru)
 RUN find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 RUN find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
-# 设置Python不生成字节码（避免缓存问题）
+# Set Python agar tidak generate bytecode (hindari masalah cache)
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# MySQL配置（通过 docker-compose.yml 或命令行传入）
-# 不在这里硬编码，使用环境变量
+# Konfigurasi MySQL (diteruskan melalui docker-compose.yml atau command line)
+# Jangan hardcode di sini, gunakan environment variables
 
-# 健康检查（检查机器人进程）
+# Health check (periksa proses bot)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD pgrep -f "python.*bot.py" || exit 1
 
-# 启动机器人
+# Jalankan bot
 CMD ["python", "-u", "bot.py"]

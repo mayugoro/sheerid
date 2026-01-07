@@ -1,107 +1,107 @@
-# SheerID 自动认证 Telegram 机器人
+# Bot Telegram Verifikasi Otomatis SheerID
 
 ![Stars](https://img.shields.io/github/stars/PastKing/tgbot-verify?style=social)
 ![Forks](https://img.shields.io/github/forks/PastKing/tgbot-verify?style=social)
 ![Issues](https://img.shields.io/github/issues/PastKing/tgbot-verify)
 ![License](https://img.shields.io/github/license/PastKing/tgbot-verify)
 
-> 🤖 自动完成 SheerID 学生/教师认证的 Telegram 机器人
+> 🤖 Bot Telegram yang otomatis menyelesaikan verifikasi mahasiswa/guru SheerID
 > 
-> 基于 [@auto_sheerid_bot](https://t.me/auto_sheerid_bot) GGBond 的旧版代码改进
+> Berdasarkan peningkatan kode versi lama dari GGBond [@auto_sheerid_bot](https://t.me/auto_sheerid_bot)
 
 ---
 
-## 📋 项目简介
+## 📋 Pengantar Proyek
 
-这是一个基于 Python 的 Telegram 机器人，可以自动完成多个平台的 SheerID 学生/教师身份认证。机器人自动生成身份信息、创建认证文档并提交到 SheerID 平台，大大简化了认证流程。
+Ini adalah bot Telegram berbasis Python yang dapat menyelesaikan verifikasi identitas mahasiswa/guru SheerID di berbagai platform secara otomatis. Bot ini secara otomatis menghasilkan informasi identitas, membuat dokumen verifikasi, dan mengirimkannya ke platform SheerID, sehingga sangat menyederhanakan proses verifikasi.
 
-> **⚠️ 重要提示**：
+> **⚠️ Pemberitahuan Penting**:
 > 
-> - **Gemini One Pro**、**ChatGPT Teacher K12**、**Spotify Student**、**YouTube Premium Student** 等服务在使用前需要更新各模块配置文件中的 `programId` 等验证资料，具体请参考下方"使用前必读"章节。
-> - 本项目还提供了 **ChatGPT 军人认证**的实现思路和接口文档，详细内容请查看 [`military/README.md`](military/README.md)，用户可根据文档自行集成。
+> - Layanan seperti **Gemini One Pro**, **ChatGPT Teacher K12**, **Spotify Student**, **YouTube Premium Student** memerlukan pembaruan `programId` dan data verifikasi lainnya di file konfigurasi setiap modul sebelum digunakan. Silakan lihat bagian "Wajib Dibaca Sebelum Digunakan" di bawah untuk detailnya.
+> - Proyek ini juga menyediakan dokumentasi pemikiran implementasi dan antarmuka untuk **Verifikasi Militer ChatGPT**. Untuk detail lengkap, silakan lihat [`military/README.md`](military/README.md). Pengguna dapat mengintegrasikannya sendiri berdasarkan dokumentasi.
 
-### 🎯 支持的认证服务
+### 🎯 Layanan Verifikasi yang Didukung
 
-| 命令 | 服务 | 类型 | 状态 | 说明 |
+| Perintah | Layanan | Tipe | Status | Keterangan |
 |------|------|------|------|------|
-| `/verify` | Gemini One Pro | 教师认证 | ✅ 完整 | Google AI Studio 教育优惠 |
-| `/verify2` | ChatGPT Teacher K12 | 教师认证 | ✅ 完整 | OpenAI ChatGPT 教育优惠 |
-| `/verify3` | Spotify Student | 学生认证 | ✅ 完整 | Spotify 学生订阅优惠 |
-| `/verify4` | Bolt.new Teacher | 教师认证 | ✅ 完整 | Bolt.new 教育优惠（自动获取 code）|
-| `/verify5` | YouTube Premium Student | 学生认证 | ⚠️ 半成品 | YouTube Premium 学生优惠（见下方说明）|
+| `/verify` | Gemini One Pro | Verifikasi Guru | ✅ Lengkap | Diskon pendidikan Google AI Studio |
+| `/verify2` | ChatGPT Teacher K12 | Verifikasi Guru | ✅ Lengkap | Diskon pendidikan OpenAI ChatGPT |
+| `/verify3` | Spotify Student | Verifikasi Mahasiswa | ✅ Lengkap | Diskon langganan mahasiswa Spotify |
+| `/verify4` | Bolt.new Teacher | Verifikasi Guru | ✅ Lengkap | Diskon pendidikan Bolt.new (otomatis dapat code) |
+| `/verify5` | YouTube Premium Student | Verifikasi Mahasiswa | ⚠️ Setengah Jadi | Diskon mahasiswa YouTube Premium (lihat penjelasan di bawah) |
 
-> **⚠️ YouTube 认证特别说明**：
+> **⚠️ Penjelasan Khusus Verifikasi YouTube**:
 > 
-> YouTube 认证功能目前为半成品状态，使用前请仔细阅读 [`youtube/HELP.MD`](youtube/HELP.MD) 文档。
+> Fungsi verifikasi YouTube saat ini dalam status setengah jadi. Silakan baca dokumen [`youtube/HELP.MD`](youtube/HELP.MD) dengan seksama sebelum digunakan.
 > 
-> **主要区别**：
-> - YouTube 的原始链接格式与其他服务不同
-> - 需要手动从浏览器网络日志中提取 `programId` 和 `verificationId`
-> - 然后手动组成标准的 SheerID 链接格式
+> **Perbedaan Utama**:
+> - Format link asli YouTube berbeda dengan layanan lainnya
+> - Perlu ekstrak `programId` dan `verificationId` secara manual dari log jaringan browser
+> - Kemudian susun secara manual ke format link SheerID standar
 > 
-> **使用步骤**：
-> 1. 访问 YouTube Premium 学生认证页面
-> 2. 打开浏览器开发者工具（F12）→ 网络（Network）标签
-> 3. 开始认证流程，搜索 `https://services.sheerid.com/rest/v2/verification/`
-> 4. 从请求载荷中获取 `programId`，从响应中获取 `verificationId`
-> 5. 手动组成链接：`https://services.sheerid.com/verify/{programId}/?verificationId={verificationId}`
-> 6. 使用 `/verify5` 命令提交该链接
+> **Langkah Penggunaan**:
+> 1. Kunjungi halaman verifikasi mahasiswa YouTube Premium
+> 2. Buka developer tools browser (F12) → Tab Network (Jaringan)
+> 3. Mulai proses verifikasi, cari `https://services.sheerid.com/rest/v2/verification/`
+> 4. Dapatkan `programId` dari request payload, dapatkan `verificationId` dari response
+> 5. Susun link secara manual: `https://services.sheerid.com/verify/{programId}/?verificationId={verificationId}`
+> 6. Gunakan perintah `/verify5` untuk submit link tersebut
 
-> **💡 ChatGPT 军人认证思路**：
+> **💡 Pemikiran Verifikasi Militer ChatGPT**:
 > 
-> 本项目提供了 ChatGPT 军人 SheerID 认证的实现思路和接口文档。军人认证流程与普通学生/教师认证不同，需要先执行 `collectMilitaryStatus` 接口设置军人状态，然后再提交个人信息表单。详细实现思路和接口说明请查看 [`military/README.md`](military/README.md) 文档。用户可根据该文档自行集成到机器人中。
+> Proyek ini menyediakan dokumentasi pemikiran implementasi dan antarmuka untuk verifikasi SheerID militer ChatGPT. Alur verifikasi militer berbeda dengan verifikasi mahasiswa/guru biasa. Perlu menjalankan antarmuka `collectMilitaryStatus` terlebih dahulu untuk mengatur status militer, kemudian baru submit formulir informasi pribadi. Untuk pemikiran implementasi detail dan penjelasan antarmuka, silakan lihat dokumentasi [`military/README.md`](military/README.md). Pengguna dapat mengintegrasikannya sendiri ke dalam bot berdasarkan dokumentasi tersebut.
 
-### ✨ 核心功能
+### ✨ Fitur Inti
 
-- 🚀 **自动化流程**：一键完成信息生成、文档创建、认证提交
-- 🎨 **智能生成**：自动生成学生证/教师证 PNG 图片
-- 💰 **积分系统**：签到、邀请、卡密兑换等多种获取方式
-- 🔐 **安全可靠**：使用 MySQL 数据库，支持环境变量配置
-- ⚡ **并发控制**：智能管理并发请求，确保稳定性
-- 👥 **管理功能**：完善的用户管理和积分管理系统
+- 🚀 **Proses Otomatis**: Selesaikan pembuatan informasi, pembuatan dokumen, dan pengiriman verifikasi dengan satu klik
+- 🎨 **Generasi Cerdas**: Otomatis menghasilkan gambar PNG kartu mahasiswa/guru
+- 💰 **Sistem Poin**: Berbagai cara untuk mendapatkan poin seperti check-in, undangan, tukar kode voucher, dll
+- 🔐 **Aman dan Andal**: Menggunakan database MySQL, mendukung konfigurasi environment variable
+- ⚡ **Kontrol Konkurensi**: Mengelola permintaan konkuren secara cerdas, memastikan stabilitas
+- 👥 **Fungsi Manajemen**: Sistem manajemen pengguna dan poin yang lengkap
 
 ---
 
-## 🛠️ 技术栈
+## 🛠️ Stack Teknologi
 
-- **语言**：Python 3.11+
-- **Bot框架**：python-telegram-bot 20.0+
-- **数据库**：MySQL 5.7+
-- **浏览器自动化**：Playwright
-- **HTTP客户端**：httpx
-- **图像处理**：Pillow, reportlab, xhtml2pdf
-- **环境管理**：python-dotenv
+- **Bahasa**: Python 3.11+
+- **Framework Bot**: python-telegram-bot 20.0+
+- **Database**: MySQL 5.7+
+- **Otomasi Browser**: Playwright
+- **HTTP Client**: httpx
+- **Pemrosesan Gambar**: Pillow, reportlab, xhtml2pdf
+- **Manajemen Environment**: python-dotenv
 
 ---
 
-## 🚀 快速开始
+## 🚀 Mulai Cepat
 
-### 1. 克隆项目
+### 1. Clone proyek
 
 ```bash
 git clone https://github.com/PastKing/tgbot-verify.git
 cd tgbot-verify
 ```
 
-### 2. 安装依赖
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 3. 配置环境变量
+### 3. Konfigurasi environment variables
 
-复制 `env.example` 为 `.env` 并填写配置：
+Salin `env.example` menjadi `.env` dan isi konfigurasi:
 
 ```env
-# Telegram Bot 配置
+# Konfigurasi Telegram Bot
 BOT_TOKEN=your_bot_token_here
 CHANNEL_USERNAME=your_channel
 CHANNEL_URL=https://t.me/your_channel
 ADMIN_USER_ID=your_admin_id
 
-# MySQL 数据库配置
+# Konfigurasi Database MySQL
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USER=root

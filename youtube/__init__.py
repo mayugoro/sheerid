@@ -1,1 +1,1 @@
-"""Gemini One Pro SheerID 认证模块"""
+"""YouTube Premium Student SheerID modul verifikasi"""
