@@ -118,6 +118,43 @@ class SheerIDVerifier:
             logger.error(f"SheerID request gagal: {e}")
             raise
 
+    @staticmethod
+    def parse_error_message(error_data: Dict) -> str:
+        """Parse error response menjadi pesan yang user-friendly"""
+        error_ids = error_data.get("errorIds", [])
+        system_error = error_data.get("systemErrorMessage", "")
+        current_step = error_data.get("currentStep", "")
+        
+        # Mapping error yang umum
+        if "invalidStep" in error_ids:
+            if "emailLoop" in system_error or current_step == "emailLoop":
+                return "Link verifikasi sudah pernah digunakan. Silakan cek email untuk menyelesaikan verifikasi, atau gunakan link verifikasi baru."
+            return "Link verifikasi sudah tidak valid atau sudah pernah digunakan. Silakan buat verifikasi baru dan gunakan link yang baru."
+        
+        if "emailAlreadyUsed" in error_ids or "emailInUse" in error_ids:
+            return "Email sudah pernah digunakan untuk verifikasi. Gunakan email lain atau tunggu beberapa saat."
+        
+        if "organizationNotFound" in error_ids:
+            return "Organisasi military tidak valid. Silakan coba lagi."
+        
+        if "invalidBirthDate" in error_ids:
+            return "Tanggal lahir tidak valid. Harus berusia minimal 18 tahun."
+        
+        if "invalidDischargeDate" in error_ids:
+            return "Tanggal pensiun tidak valid. Pastikan tanggal pensiun setelah tanggal lahir."
+        
+        if "rateLimitExceeded" in error_ids:
+            return "Terlalu banyak percobaan. Silakan tunggu beberapa menit dan coba lagi."
+        
+        if "systemError" in error_ids:
+            return "Terjadi error pada sistem SheerID. Silakan coba lagi nanti."
+        
+        # Jika tidak ada error yang dikenali, return error mentah
+        if error_ids:
+            return f"Error: {', '.join(error_ids)}. Silakan hubungi admin jika masalah berlanjut."
+        
+        return "Terjadi error yang tidak diketahui. Silakan coba lagi atau hubungi admin."
+
     def verify(
         self,
         first_name: str = None,
@@ -165,9 +202,10 @@ class SheerIDVerifier:
 
             if step1_status != 200:
                 logger.error(f"❌ Langkah 1 gagal (status code {step1_status}): {step1_data}")
+                error_msg = self.parse_error_message(step1_data) if isinstance(step1_data, dict) else str(step1_data)
                 return {
                     "success": False,
-                    "message": f"Langkah 1 gagal (status code {step1_status}): {step1_data}",
+                    "message": f"Gagal submit status military: {error_msg}",
                 }
 
             # Dapatkan submissionUrl dari response
@@ -213,9 +251,10 @@ class SheerIDVerifier:
 
             if step2_status != 200:
                 logger.error(f"❌ Verifikasi gagal (status code {step2_status}): {step2_data}")
+                error_msg = self.parse_error_message(step2_data) if isinstance(step2_data, dict) else str(step2_data)
                 return {
                     "success": False,
-                    "message": f"Langkah 2 gagal (status code {step2_status}): {step2_data}",
+                    "message": error_msg,
                 }
 
             # Cek apakah ada redirect URL
