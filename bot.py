@@ -30,7 +30,6 @@ from handlers.admin_commands import (
     broadcast_command,
     userlist_command,
 )
-)
 
 # Konfigurasi logging
 logging.basicConfig(
