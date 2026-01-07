@@ -22,6 +22,9 @@ def get_about_message() -> str:
     return (
         "🤖 Bot Verifikasi Otomatis SheerID\n"
         "\n"
+        "PastKing (Developer utama)\n"
+        "@Mayugoro (merubah susunan sistem ke sqlite3 dan sistem inti lainnya)\n"
+        "\n"
         "Fitur:\n"
         "- Otomatis menyelesaikan verifikasi pelajar/guru SheerID\n"
         "- Mendukung verifikasi Gemini One Pro, ChatGPT Teacher K12, Spotify Student, YouTube Student, Bolt.new Teacher\n"
