@@ -1,10 +1,10 @@
-"""并发控制工具（优化版）
+"""Tool kontrol konkurensi (versi optimasi)
 
-性能改进：
-1. 动态并发限制（根据系统负载）
-2. 分离不同验证类型的并发控制
-3. 支持更高的并发数
-4. 负载监控和自动调整
+Peningkatan performa:
+1. Batas konkurensi dinamis (berdasarkan beban sistem)
+2. Pisahkan kontrol konkurensi untuk tipe verifikasi berbeda
+3. Dukung konkurensi lebih tinggi
+4. Monitoring beban dan penyesuaian otomatis
 """
 import asyncio
 import logging
@@ -15,37 +15,37 @@ logger = logging.getLogger(__name__)
 
 # 动态计算最大并发数
 def _calculate_max_concurrency() -> int:
-    """根据系统资源计算最大并发数"""
+    """Hitung konkurensi maksimum berdasarkan resource sistem"""
     try:
         cpu_count = psutil.cpu_count() or 4
         memory_gb = psutil.virtual_memory().total / (1024 ** 3)
         
-        # 基于 CPU 和内存计算
-        # 每个 CPU 核心支持 3-5 个并发任务
-        # 每 GB 内存支持 2 个并发任务
+        # Hitung berdasarkan CPU dan memori
+        # Setiap core CPU dukung 3-5 task konkurensi
+        # Setiap GB memori dukung 2 task konkurensi
         cpu_based = cpu_count * 4
         memory_based = int(memory_gb * 2)
         
-        # 取两者的最小值，并设置上下限
+        # Ambil nilai minimum keduanya, dan set batas atas-bawah
         max_concurrent = min(cpu_based, memory_based)
-        max_concurrent = max(10, min(max_concurrent, 100))  # 10-100 之间
+        max_concurrent = max(10, min(max_concurrent, 100))  # antara 10-100
         
         logger.info(
-            f"系统资源: CPU={cpu_count}, Memory={memory_gb:.1f}GB, "
-            f"计算并发数={max_concurrent}"
+            f"Resource sistem: CPU={cpu_count}, Memory={memory_gb:.1f}GB, "
+            f"Hitung konkurensi={max_concurrent}"
         )
         
         return max_concurrent
         
     except Exception as e:
-        logger.warning(f"无法获取系统资源信息: {e}, 使用默认值")
-        return 20  # 默认值
+        logger.warning(f"Gagal dapat info resource sistem: {e}, gunakan nilai default")
+        return 20  # nilai default
 
-# 计算每种验证类型的并发限制
+# Hitung batas konkurensi untuk setiap tipe verifikasi
 _base_concurrency = _calculate_max_concurrency()
 
-# 为不同类型的验证创建独立的信号量
-# 这样可以避免一个类型的验证阻塞其他类型
+# Buat semaphore independen untuk tipe verifikasi berbeda
+# Dengan begini bisa hindari satu tipe verifikasi memblokir tipe lain
 _verification_semaphores: Dict[str, asyncio.Semaphore] = {
     "gemini_one_pro": asyncio.Semaphore(_base_concurrency // 5),
     "chatgpt_teacher_k12": asyncio.Semaphore(_base_concurrency // 5),
@@ -56,22 +56,22 @@ _verification_semaphores: Dict[str, asyncio.Semaphore] = {
 
 
 def get_verification_semaphore(verification_type: str) -> asyncio.Semaphore:
-    """获取指定验证类型的信号量
+    """Dapatkan semaphore untuk tipe verifikasi tertentu
     
     Args:
-        verification_type: 验证类型
+        verification_type: Tipe verifikasi
         
     Returns:
-        asyncio.Semaphore: 对应的信号量
+        asyncio.Semaphore: Semaphore yang sesuai
     """
     semaphore = _verification_semaphores.get(verification_type)
     
     if semaphore is None:
-        # 未知类型，创建默认信号量
+        # Tipe tidak dikenal, buat semaphore default
         semaphore = asyncio.Semaphore(_base_concurrency // 3)
         _verification_semaphores[verification_type] = semaphore
         logger.info(
-            f"为新验证类型 {verification_type} 创建信号量: "
+            f"Buat semaphore untuk tipe verifikasi baru {verification_type}: "
             f"limit={_base_concurrency // 3}"
         )
     
@@ -79,14 +79,14 @@ def get_verification_semaphore(verification_type: str) -> asyncio.Semaphore:
 
 
 def get_concurrency_stats() -> Dict[str, Dict[str, int]]:
-    """获取并发统计信息
+    """Dapatkan statistik konkurensi
     
     Returns:
-        dict: 各验证类型的并发信息
+        dict: Info konkurensi untuk berbagai tipe verifikasi
     """
     stats = {}
     for vtype, semaphore in _verification_semaphores.items():
-        # 注意：_value 是内部属性，可能在不同 Python 版本中变化
+        # Catatan: _value adalah atribut internal, mungkin berubah di versi Python berbeda
         try:
             available = semaphore._value if hasattr(semaphore, '_value') else 0
             limit = _base_concurrency // 3
@@ -106,10 +106,10 @@ def get_concurrency_stats() -> Dict[str, Dict[str, int]]:
 
 
 async def monitor_system_load() -> Dict[str, float]:
-    """监控系统负载
+    """Monitor beban sistem
     
     Returns:
-        dict: 系统负载信息
+        dict: Info beban sistem
     """
     try:
         cpu_percent = psutil.cpu_percent(interval=0.1)
@@ -121,7 +121,7 @@ async def monitor_system_load() -> Dict[str, float]:
             'concurrency_limit': _base_concurrency,
         }
     except Exception as e:
-        logger.error(f"监控系统负载失败: {e}")
+        logger.error(f"Gagal monitor beban sistem: {e}")
         return {
             'cpu_percent': 0.0,
             'memory_percent': 0.0,
@@ -130,37 +130,37 @@ async def monitor_system_load() -> Dict[str, float]:
 
 
 def adjust_concurrency_limits(multiplier: float = 1.0):
-    """动态调整并发限制
+    """Sesuaikan batas konkurensi secara dinamis
     
     Args:
-        multiplier: 调整倍数（0.5-2.0）
+        multiplier: Kelipatan penyesuaian (0.5-2.0)
     """
     global _verification_semaphores, _base_concurrency
     
-    # 限制倍数范围
+    # Batasi range kelipatan
     multiplier = max(0.5, min(multiplier, 2.0))
     
     new_base = int(_base_concurrency * multiplier)
-    new_limit = max(5, min(new_base // 3, 50))  # 每种类型 5-50
+    new_limit = max(5, min(new_base // 3, 50))  # setiap tipe 5-50
     
     logger.info(
-        f"调整并发限制: multiplier={multiplier}, "
+        f"Sesuaikan batas konkurensi: multiplier={multiplier}, "
         f"new_base={new_base}, per_type={new_limit}"
     )
     
-    # 创建新的信号量
+    # Buat semaphore baru
     for vtype in _verification_semaphores.keys():
         _verification_semaphores[vtype] = asyncio.Semaphore(new_limit)
 
 
-# 负载监控任务
+# Task monitoring beban
 _monitor_task = None
 
 async def start_load_monitoring(interval: float = 60.0):
-    """启动负载监控任务
+    """Mulai task monitoring beban
     
     Args:
-        interval: 监控间隔（秒）
+        interval: Interval monitoring (detik)
     """
     global _monitor_task
     
@@ -177,30 +177,30 @@ async def start_load_monitoring(interval: float = 60.0):
                 memory = load_info['memory_percent']
                 
                 logger.info(
-                    f"系统负载: CPU={cpu:.1f}%, Memory={memory:.1f}%"
+                    f"Beban sistem: CPU={cpu:.1f}%, Memory={memory:.1f}%"
                 )
                 
-                # 自动调整并发限制
+                # Sesuaikan batas konkurensi otomatis
                 if cpu > 80 or memory > 85:
-                    # 负载过高，降低并发
+                    # Beban terlalu tinggi, turunkan konkurensi
                     adjust_concurrency_limits(0.7)
-                    logger.warning("系统负载过高，降低并发限制")
+                    logger.warning("Beban sistem terlalu tinggi, turunkan batas konkurensi")
                 elif cpu < 40 and memory < 60:
-                    # 负载较低，可以提高并发
+                    # Beban rendah, bisa tingkatkan konkurensi
                     adjust_concurrency_limits(1.2)
-                    logger.info("系统负载较低，提高并发限制")
+                    logger.info("Beban sistem rendah, tingkatkan batas konkurensi")
                     
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"负载监控异常: {e}")
+                logger.error(f"Exception monitoring beban: {e}")
     
     _monitor_task = asyncio.create_task(monitor_loop())
-    logger.info(f"负载监控已启动: interval={interval}s")
+    logger.info(f"Monitoring beban sudah dimulai: interval={interval}s")
 
 
 async def stop_load_monitoring():
-    """停止负载监控任务"""
+    """Hentikan task monitoring beban"""
     global _monitor_task
     
     if _monitor_task is not None:
@@ -210,4 +210,4 @@ async def stop_load_monitoring():
         except asyncio.CancelledError:
             pass
         _monitor_task = None
-        logger.info("负载监控已停止")
+        logger.info("Monitoring beban sudah dihentikan")

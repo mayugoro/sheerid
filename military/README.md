@@ -1,26 +1,26 @@
-# ChatGPT 军人 SheerID 认证思路
+# ChatGPT Military SheerID Ide Verifikasi
 
-## 📋 概述
+## 📋 Ringkasan
 
-ChatGPT 军人认证流程与普通学生/教师认证不同，需要先执行一个额外的接口来收集军人状态信息，然后再提交个人信息表单。
+Proses verifikasi military ChatGPT berbeda dengan verifikasi mahasiswa/guru biasa, perlu eksekusi interface tambahan dulu untuk mengumpulkan informasi status military, lalu submit form informasi pribadi.
 
-## 🔄 认证流程
+## 🔄 Alur Verifikasi
 
-### 第一步：收集军人状态 (collectMilitaryStatus)
+### Langkah 1: Kumpulkan Status Military (collectMilitaryStatus)
 
-在提交个人信息表单之前，必须先调用此接口来设置军人状态。
+Sebelum submit form informasi pribadi, harus panggil interface ini dulu untuk set status military.
 
-**请求信息**：
+**Informasi Request**:
 - **URL**: `https://services.sheerid.com/rest/v2/verification/{verificationId}/step/collectMilitaryStatus`
-- **方法**: `POST`
-- **参数**:
+- **Method**: `POST`
+- **Parameter**:
 ```json
 {
-    "status": "VETERAN" // 总共3个
+    "status": "VETERAN" // Total 3
 }
 ```
 
-**响应示例**：
+**Contoh Response**:
 ```json
 {
     "verificationId": "{verification_id}",
@@ -37,21 +37,21 @@ ChatGPT 军人认证流程与普通学生/教师认证不同，需要先执行�
 }
 ```
 
-**关键字段**：
-- `submissionUrl`: 下一步需要使用的提交URL
-- `currentStep`: 当前步骤，应该变为 `collectInactiveMilitaryPersonalInfo`
+**Field Penting**:
+- `submissionUrl`: URL submit yang perlu digunakan langkah berikutnya
+- `currentStep`: Langkah saat ini, seharusnya berubah jadi `collectInactiveMilitaryPersonalInfo`
 
 ---
 
-### 第二步：收集非现役军人个人信息 (collectInactiveMilitaryPersonalInfo)
+### Langkah 2: Kumpulkan Informasi Pribadi Military Non-Aktif (collectInactiveMilitaryPersonalInfo)
 
-使用第一步返回的 `submissionUrl` 提交个人信息。
+Gunakan `submissionUrl` yang dikembalikan langkah 1 untuk submit informasi pribadi.
 
-**请求信息**：
-- **URL**: 从第一步响应的 `submissionUrl` 获取
-  - 例如: `https://services.sheerid.com/rest/v2/verification/{verificationId}/step/collectInactiveMilitaryPersonalInfo`
-- **方法**: `POST`
-- **参数**:
+**Informasi Request**:
+- **URL**: Dapatkan dari `submissionUrl` response langkah 1
+  - Contoh: `https://services.sheerid.com/rest/v2/verification/{verificationId}/step/collectInactiveMilitaryPersonalInfo`
+- **Method**: `POST`
+- **Parameter**:
 ```json
 {
     "firstName": "name",
@@ -76,23 +76,23 @@ ChatGPT 军人认证流程与普通学生/教师认证不同，需要先执行�
 }
 ```
 
-**关键字段说明**：
-- `firstName`: 名字
-- `lastName`: 姓氏
-- `birthDate`: 出生日期，格式 `YYYY-MM-DD`
-- `email`: 邮箱地址
-- `phoneNumber`: 电话号码（可为空）
-- `organization`: 军队组织信息（见下方组织列表）
-- `dischargeDate`: 退役日期，格式 `YYYY-MM-DD`
-- `locale`: 语言区域，默认 `en-US`
-- `country`: 国家代码，默认 `US`
-- `metadata`: 元数据信息（包含隐私政策同意文本等）
+**Penjelasan Field Penting**:
+- `firstName`: Nama depan
+- `lastName`: Nama belakang
+- `birthDate`: Tanggal lahir, format `YYYY-MM-DD`
+- `email`: Alamat email
+- `phoneNumber`: Nomor telepon (bisa kosong)
+- `organization`: Informasi organisasi militer (lihat daftar organisasi di bawah)
+- `dischargeDate`: Tanggal pensiun, format `YYYY-MM-DD`
+- `locale`: Region bahasa, default `en-US`
+- `country`: Kode negara, default `US`
+- `metadata`: Informasi metadata (termasuk teks persetujuan kebijakan privasi dll)
 
 ---
 
-## 🎖️ 军队组织列表 (Organization)
+## 🎖️ Daftar Organisasi Militer (Organization)
 
-以下是可用的军队组织选项：
+Berikut adalah opsi organisasi militer yang tersedia:
 
 ```json
 [
@@ -153,32 +153,32 @@ ChatGPT 军人认证流程与普通学生/教师认证不同，需要先执行�
 ]
 ```
 
-**组织ID映射**：
-- `4070` - Army (陆军)
-- `4073` - Air Force (空军)
-- `4072` - Navy (海军)
-- `4071` - Marine Corps (海军陆战队)
-- `4074` - Coast Guard (海岸警卫队)
-- `4544268` - Space Force (太空军)
+**Mapping ID Organisasi**:
+- `4070` - Army (Angkatan Darat)
+- `4073` - Air Force (Angkatan Udara)
+- `4072` - Navy (Angkatan Laut)
+- `4071` - Marine Corps (Korps Marinir)
+- `4074` - Coast Guard (Penjaga Pantai)
+- `4544268` - Space Force (Angkatan Luar Angkasa)
 
 ---
 
-## 🔑 实现要点
+## 🔑 Poin-Poin Implementasi
 
-1. **必须按顺序执行**：必须先调用 `collectMilitaryStatus`，获取 `submissionUrl` 后，再调用 `collectInactiveMilitaryPersonalInfo`
-2. **组织信息**：`organization` 字段需要包含 `id` 和 `name`，可以从上述列表中随机选择或让用户选择
-3. **日期格式**：`birthDate` 和 `dischargeDate` 必须使用 `YYYY-MM-DD` 格式
-4. **元数据**：`metadata` 字段中的 `submissionOptIn` 包含隐私政策同意文本，需要从原始请求中提取或构造
+1. **Harus dieksekusi berurutan**: Harus panggil `collectMilitaryStatus` dulu, setelah dapat `submissionUrl`, baru panggil `collectInactiveMilitaryPersonalInfo`
+2. **Informasi organisasi**: Field `organization` perlu berisi `id` dan `name`, bisa pilih random dari daftar di atas atau biarkan user pilih
+3. **Format tanggal**: `birthDate` dan `dischargeDate` harus gunakan format `YYYY-MM-DD`
+4. **Metadata**: `submissionOptIn` di field `metadata` berisi teks persetujuan kebijakan privasi, perlu extract dari request asli atau konstruksi
 
 ---
 
-## 📝 待实现功能
+## 📝 Fitur Yang Perlu Diimplementasi
 
-- [ ] 实现 `collectMilitaryStatus` 接口调用
-- [ ] 实现 `collectInactiveMilitaryPersonalInfo` 接口调用
-- [ ] 添加军队组织选择逻辑
-- [ ] 生成符合要求的个人信息（姓名、出生日期、邮箱等）
-- [ ] 生成退役日期（需要合理的时间范围）
-- [ ] 处理元数据信息（从原始请求中提取或构造）
-- [ ] 集成到主机器人命令系统（如 `/verify6`）
+- [ ] Implementasi pemanggilan interface `collectMilitaryStatus`
+- [ ] Implementasi pemanggilan interface `collectInactiveMilitaryPersonalInfo`
+- [ ] Tambah logika pemilihan organisasi militer
+- [ ] Generate informasi pribadi sesuai persyaratan (nama, tanggal lahir, email dll)
+- [ ] Generate tanggal pensiun (perlu rentang waktu yang wajar)
+- [ ] Handle informasi metadata (extract dari request asli atau konstruksi)
+- [ ] Integrasi ke sistem command bot utama (seperti `/verify6`)
 
