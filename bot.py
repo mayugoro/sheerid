@@ -2,7 +2,7 @@
 import logging
 from functools import partial
 
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from config import BOT_TOKEN
 from database_sqlite import Database
@@ -19,6 +19,7 @@ from handlers.verify_commands import (
     verify4_command,
     verify5_command,
     check_verif5_command,
+    handle_military_token_input,
     getV4Code_command,
 )
 from handlers.admin_commands import (
@@ -87,6 +88,14 @@ def main():
     application.add_handler(CommandHandler("blacklist", partial(blacklist_command, db=db)))
     application.add_handler(CommandHandler("broadcast", partial(broadcast_command, db=db)))
     application.add_handler(CommandHandler("userlist", partial(userlist_command, db=db)))
+
+    # Register message handler untuk military token input (harus setelah semua command handler)
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            partial(handle_military_token_input, db=db)
+        )
+    )
 
     # Register error handler
     application.add_error_handler(error_handler)

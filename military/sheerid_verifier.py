@@ -69,6 +69,14 @@ class SheerIDVerifier:
         return None
 
     @staticmethod
+    def parse_email_token(url: str) -> Optional[str]:
+        """Parse email token dari URL"""
+        match = re.search(r"emailToken=(\d+)", url, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return None
+
+    @staticmethod
     def generate_name() -> Dict[str, str]:
         """Generate nama random"""
         return {

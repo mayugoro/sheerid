@@ -682,13 +682,31 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
         )
 
         if result["success"]:
+            # Cek apakah pending emailLoop
+            if result.get("pending") and "email" in result.get("message", "").lower():
+                result_msg = (
+                    "📧 Data veteran berhasil disubmit!\n\n"
+                    f"✉️ Silakan cek email: {email}\n"
+                    "Klik link verifikasi dari SheerID.\n\n"
+                    "⏱️ Setelah klik link di email, kirim URL lengkap dengan emailToken atau cukup kirim angka tokennya saja dalam 60 detik ke sini.\n\n"
+                    "Contoh:\n"
+                    "- Kirim full URL: https://services.sheerid.com/verify/...?verificationId=xxx&emailToken=225513\n"
+                    "- Atau kirim token saja: 225513"
+                )
+                await processing_msg.edit_text(result_msg)
+                
+                # Simpan state untuk menunggu token
+                context.user_data['waiting_military_token'] = {
+                    'verification_id': verification_id,
+                    'timestamp': time.time()
+                }
+                
+                return  # Keluar dan tunggu user input token
+            
+            # Jika langsung berhasil (ada redirect)
             result_msg = "✅ Verifikasi military berhasil!\n\n"
-            if result.get("pending"):
-                result_msg += f"📧 Silakan cek email: {email}\n"
-                result_msg += "Klik link verifikasi dari SheerID untuk menyelesaikan verifikasi.\n\n"
-                result_msg += result.get("message", "")
             if result.get("redirect_url"):
-                result_msg += f"\n\nLink redirect:\n{result['redirect_url']}"
+                result_msg += f"Link redirect:\n{result['redirect_url']}"
             await processing_msg.edit_text(result_msg)
         else:
             db.add_balance(user_id, VERIFY_COST)
@@ -787,3 +805,61 @@ async def check_verif5_command(update: Update, context: ContextTypes.DEFAULT_TYP
             await processing_msg.edit_text(
                 f"❌ Terjadi error: {str(e)}"
             )
+
+
+async def handle_military_token_input(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle input email token untuk military verification"""
+    user_id = update.effective_user.id
+    
+    # Cek apakah user sedang menunggu input token
+    waiting_data = context.user_data.get('waiting_military_token')
+    if not waiting_data:
+        return  # Bukan untuk handler ini
+    
+    # Cek timeout (60 detik)
+    if time.time() - waiting_data['timestamp'] > 60:
+        del context.user_data['waiting_military_token']
+        await update.message.reply_text(
+            "⏱️ Waktu input token sudah habis (60 detik). Silakan gunakan /checkVerif5 untuk submit token."
+        )
+        return
+    
+    verification_id = waiting_data['verification_id']
+    text = update.message.text.strip()
+    
+    # Extract token dari text (bisa full URL atau cuma angka)
+    email_token = MilitaryVerifier.parse_email_token(text)
+    if not email_token:
+        # Coba parse sebagai angka langsung
+        if text.isdigit():
+            email_token = text
+        else:
+            await update.message.reply_text(
+                "❌ Format token tidak valid. Kirim URL lengkap dengan emailToken atau cukup angka tokennya saja.\n\n"
+                "Contoh: 225513"
+            )
+            return
+    
+    # Clear waiting state
+    del context.user_data['waiting_military_token']
+    
+    processing_msg = await update.message.reply_text(
+        f"📧 Memproses email token: {email_token}..."
+    )
+    
+    try:
+        verifier = MilitaryVerifier(verification_id)
+        result = await asyncio.to_thread(verifier.submit_email_token, email_token)
+        
+        if result["success"]:
+            result_msg = "✅ Verifikasi military berhasil!\n\n"
+            if result.get("redirect_url"):
+                result_msg += f"Link redirect:\n{result['redirect_url']}"
+            await processing_msg.edit_text(result_msg)
+        else:
+            await processing_msg.edit_text(
+                f"❌ Gagal submit token: {result.get('message', 'Error tidak diketahui')}"
+            )
+    except Exception as e:
+        logger.error("Error saat submit email token: %s", e)
+        await processing_msg.edit_text(f"❌ Terjadi error: {str(e)}")
