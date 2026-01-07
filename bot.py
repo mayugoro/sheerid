@@ -28,6 +28,8 @@ from handlers.admin_commands import (
     white_command,
     blacklist_command,
     broadcast_command,
+    userlist_command,
+)
 )
 
 # Konfigurasi logging
@@ -81,6 +83,7 @@ def main():
     application.add_handler(CommandHandler("white", partial(white_command, db=db)))  # Alias
     application.add_handler(CommandHandler("blacklist", partial(blacklist_command, db=db)))
     application.add_handler(CommandHandler("broadcast", partial(broadcast_command, db=db)))
+    application.add_handler(CommandHandler("userlist", partial(userlist_command, db=db)))
 
     # Register error handler
     application.add_error_handler(error_handler)

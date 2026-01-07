@@ -321,3 +321,57 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
             failed += 1
 
     await status_msg.edit_text(f"✅ Broadcast selesai!\nBerhasil: {success}\nGagal: {failed}")
+
+
+async def userlist_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle command /userlist - Admin lihat semua user"""
+    if await reject_group_command(update):
+        return
+
+    user_id = update.effective_user.id
+
+    if user_id != ADMIN_USER_ID:
+        await update.message.reply_text("Anda tidak punya izin untuk menggunakan command ini.")
+        return
+
+    users = db.get_all_users()
+    
+    if not users:
+        await update.message.reply_text("Tidak ada user yang terdaftar.")
+        return
+
+    # Buat file txt
+    txt_content = "Daftar User Bot Verifikasi SheerID\n"
+    txt_content += "=" * 80 + "\n"
+    txt_content += f"Total User: {len(users)}\n"
+    txt_content += f"Dibuat pada: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    txt_content += "=" * 80 + "\n\n"
+    txt_content += f"{'ID':<15} | {'Username':<20} | {'Tanggal Bergabung':<20} | {'Status':<10}\n"
+    txt_content += "-" * 80 + "\n"
+
+    for user in users:
+        user_id_str = str(user['user_id'])
+        username = f"@{user['username']}" if user['username'] else "No Username"
+        created_at = user['created_at'][:10] if user['created_at'] else "Unknown"
+        
+        # Status: ✅ jika tidak blocked, ❌ jika blocked
+        status = "❌ Blocked" if user['is_blocked'] == 1 else "✅ Allowed"
+        
+        txt_content += f"{user_id_str:<15} | {username:<20} | {created_at:<20} | {status:<10}\n"
+
+    # Simpan ke file temporary
+    file_path = "userlist.txt"
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(txt_content)
+
+    # Kirim file ke admin
+    with open(file_path, "rb") as f:
+        await update.message.reply_document(
+            document=f,
+            filename=f"userlist_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            caption=f"📊 Daftar {len(users)} user"
+        )
+
+    # Hapus file temporary
+    import os
+    os.remove(file_path)

@@ -66,6 +66,7 @@ def get_help_message(is_admin: bool = False) -> str:
             "/ban <User ID> - Ban user\n"
             "/unban <User ID> - Unban user\n"
             "/blacklist - Lihat daftar blacklist\n"
+            "/userlist - Lihat semua user (file txt)\n"
             "/broadcast <teks> - Broadcast pesan ke semua user\n"
         )
 

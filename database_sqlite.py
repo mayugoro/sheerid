@@ -532,6 +532,21 @@ class SQLiteDatabase:
             cursor.close()
             conn.close()
 
+    def get_all_users(self) -> List[Dict]:
+        """Mendapatkan semua user dengan detail lengkap"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                "SELECT user_id, username, full_name, balance, is_blocked, created_at "
+                "FROM users ORDER BY created_at DESC"
+            )
+            return [dict(row) for row in cursor.fetchall()]
+        finally:
+            cursor.close()
+            conn.close()
+
 
 # Alias untuk global instance
 Database = SQLiteDatabase
