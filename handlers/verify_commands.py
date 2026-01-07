@@ -15,6 +15,7 @@ from k12.sheerid_verifier import SheerIDVerifier as K12Verifier
 from spotify.sheerid_verifier import SheerIDVerifier as SpotifyVerifier
 from youtube.sheerid_verifier import SheerIDVerifier as YouTubeVerifier
 from Boltnew.sheerid_verifier import SheerIDVerifier as BoltnewVerifier
+from military.sheerid_verifier import SheerIDVerifier as MilitaryVerifier
 from utils.messages import get_insufficient_balance_message, get_verify_usage_message
 
 # Coba import concurrency control, jika gagal gunakan implementasi sederhana
@@ -616,4 +617,80 @@ async def getV4Code_command(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         await processing_msg.edit_text(
             f"❌ Terjadi error saat query: {str(e)}\n\n"
             "Silakan coba lagi nanti atau hubungi admin."
+        )
+
+
+async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle command /verify5 - ChatGPT Military Veteran"""
+    user_id = update.effective_user.id
+
+    if db.is_user_blocked(user_id):
+        await update.message.reply_text("Anda telah diblokir, tidak dapat menggunakan fitur ini.")
+        return
+
+    if not db.user_exists(user_id):
+        await update.message.reply_text("Silakan gunakan /start untuk registrasi dulu.")
+        return
+
+    if not context.args:
+        await update.message.reply_text(
+            get_verify_usage_message("/verify5", "ChatGPT Military")
+        )
+        return
+
+    url = context.args[0]
+    user = db.get_user(user_id)
+    if user["balance"] < VERIFY_COST:
+        await update.message.reply_text(
+            get_insufficient_balance_message(user["balance"])
+        )
+        return
+
+    verification_id = MilitaryVerifier.parse_verification_id(url)
+    if not verification_id:
+        await update.message.reply_text("Link SheerID tidak valid, silakan cek dan coba lagi.")
+        return
+
+    if not db.deduct_balance(user_id, VERIFY_COST):
+        await update.message.reply_text("Gagal kurangi token, silakan coba lagi nanti.")
+        return
+
+    processing_msg = await update.message.reply_text(
+        f"🎖️ Mulai memproses ChatGPT Military verifikasi...\n"
+        f"ID Verifikasi: {verification_id}\n"
+        f"Telah dikurangi {VERIFY_COST} token\n\n"
+        "Mohon tunggu, ini mungkin memakan waktu 1-2 menit..."
+    )
+
+    try:
+        verifier = MilitaryVerifier(verification_id)
+        result = await asyncio.to_thread(verifier.verify)
+
+        db.add_verification(
+            user_id,
+            "chatgpt_military",
+            url,
+            "success" if result["success"] else "failed",
+            str(result),
+        )
+
+        if result["success"]:
+            result_msg = "✅ Verifikasi military berhasil!\n\n"
+            if result.get("pending"):
+                result_msg += "Dokumen telah disubmit, menunggu review manual.\n"
+            if result.get("redirect_url"):
+                result_msg += f"Link redirect:\n{result['redirect_url']}"
+            await processing_msg.edit_text(result_msg)
+        else:
+            db.add_balance(user_id, VERIFY_COST)
+            await processing_msg.edit_text(
+                f"❌ Verifikasi gagal: {result.get('message', 'Error tidak diketahui')}\n\n"
+                f"Telah dikembalikan {VERIFY_COST} token"
+            )
+    except Exception as e:
+        logger.error("Error saat proses verifikasi military: %s", e)
+        db.add_balance(user_id, VERIFY_COST)
+        await processing_msg.edit_text(
+            f"❌ Terjadi error saat proses: {str(e)}\n\n"
+            f"Telah dikembalikan {VERIFY_COST} token"
         )
