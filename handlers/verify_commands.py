@@ -632,13 +632,19 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
         await update.message.reply_text("Silakan gunakan /start untuk registrasi dulu.")
         return
 
-    if not context.args:
+    if not context.args or len(context.args) < 2:
         await update.message.reply_text(
-            get_verify_usage_message("/verify5", "ChatGPT Military")
+            "Cara penggunaan: /verify5 <link> <email>\n\n"
+            "Contoh:\n"
+            "/verify5 https://services.sheerid.com/verify/...?verificationId=xxx user@gmail.com\n\n"
+            "⚠️ Gunakan email Anda sendiri karena SheerID akan mengirim link verifikasi ke email tersebut.\n"
+            "Setelah bot submit data, cek email dan klik link verifikasi dari SheerID."
         )
         return
 
     url = context.args[0]
+    email = context.args[1]
+    
     user = db.get_user(user_id)
     if user["balance"] < VERIFY_COST:
         await update.message.reply_text(
@@ -658,13 +664,14 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
     processing_msg = await update.message.reply_text(
         f"🎖️ Mulai memproses ChatGPT Military verifikasi...\n"
         f"ID Verifikasi: {verification_id}\n"
+        f"Email: {email}\n"
         f"Telah dikurangi {VERIFY_COST} token\n\n"
         "Mohon tunggu, ini mungkin memakan waktu 1-2 menit..."
     )
 
     try:
         verifier = MilitaryVerifier(verification_id)
-        result = await asyncio.to_thread(verifier.verify)
+        result = await asyncio.to_thread(verifier.verify, email=email)
 
         db.add_verification(
             user_id,
@@ -677,9 +684,11 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
         if result["success"]:
             result_msg = "✅ Verifikasi military berhasil!\n\n"
             if result.get("pending"):
-                result_msg += "Dokumen telah disubmit, menunggu review manual.\n"
+                result_msg += f"📧 Silakan cek email: {email}\n"
+                result_msg += "Klik link verifikasi dari SheerID untuk menyelesaikan verifikasi.\n\n"
+                result_msg += result.get("message", "")
             if result.get("redirect_url"):
-                result_msg += f"Link redirect:\n{result['redirect_url']}"
+                result_msg += f"\n\nLink redirect:\n{result['redirect_url']}"
             await processing_msg.edit_text(result_msg)
         else:
             db.add_balance(user_id, VERIFY_COST)
