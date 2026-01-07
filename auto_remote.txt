@@ -1,0 +1,6 @@
+IP   : 31.97.221.129
+PASS : mayugorokv2
+USER : root
+PORT : 22
+
+auto run : PSCP & PLINK
