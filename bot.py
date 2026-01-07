@@ -37,6 +37,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Nonaktifkan log HTTP request dari httpx (digunakan oleh python-telegram-bot)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 async def error_handler(update: object, context) -> None:
     """Handler error global"""
