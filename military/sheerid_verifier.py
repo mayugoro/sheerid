@@ -155,6 +155,56 @@ class SheerIDVerifier:
         
         return "Terjadi error yang tidak diketahui. Silakan coba lagi atau hubungi admin."
 
+    def submit_email_token(self, email_token: str) -> Dict:
+        """Submit email token setelah verifikasi email"""
+        try:
+            logger.info(f"Submit email token: {email_token}")
+            
+            # POST request untuk submit email token
+            body = {
+                "token": email_token
+            }
+            
+            data, status_code = self._sheerid_request(
+                "POST",
+                f"https://services.sheerid.com/rest/v2/verification/{self.verification_id}/step/emailLoop",
+                body,
+            )
+            
+            if status_code != 200:
+                logger.error(f"❌ Gagal submit email token (status code {status_code}): {data}")
+                error_msg = self.parse_error_message(data) if isinstance(data, dict) else str(data)
+                return {
+                    "success": False,
+                    "message": f"Gagal submit email token: {error_msg}",
+                }
+            
+            current_step = data.get("currentStep")
+            redirect_url = data.get("redirectUrl")
+            
+            logger.info(f"✅ Email token berhasil, status: {current_step}")
+            
+            if current_step == "success" or redirect_url:
+                return {
+                    "success": True,
+                    "redirect_url": redirect_url,
+                    "message": "Verifikasi military berhasil!",
+                    "data": data,
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Status setelah submit token: {current_step}",
+                    "data": data,
+                }
+                
+        except Exception as e:
+            logger.error(f"Exception saat submit email token: {e}")
+            return {
+                "success": False,
+                "message": f"Error: {str(e)}",
+            }
+
     def check_status(self) -> Dict:
         """Cek status verifikasi saat ini"""
         try:
@@ -178,6 +228,7 @@ class SheerIDVerifier:
             redirect_url = data.get("redirectUrl")
             
             logger.info(f"Status saat ini: {current_step}")
+            logger.info(f"Full response: {data}")
             
             if current_step == "success" or redirect_url:
                 logger.info("✅ Verifikasi berhasil!")

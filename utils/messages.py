@@ -53,7 +53,7 @@ def get_help_message(is_admin: bool = False) -> str:
         f"/verify3 <link> - Verifikasi Spotify Student (-{VERIFY_COST} token)\n"
         f"/verify4 <link> - Verifikasi Bolt.new Teacher (-{VERIFY_COST} token)\n"
         f"/verify5 <link> <email> - Verifikasi ChatGPT Military (-{VERIFY_COST} token)\n"
-        "/checkVerif5 <link> - Cek status verifikasi Military (gratis)\n"
+        "/checkVerif5 <link> [emailToken] - Cek/submit verifikasi Military (gratis)\n"
         "/getV4Code <verification_id> - Dapatkan kode verifikasi Bolt.new\n"
         "/help - Lihat info bantuan ini\n"
         f"Jika verifikasi gagal lihat: {HELP_NOTION_URL}\n"
