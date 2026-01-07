@@ -97,6 +97,31 @@ class SheerIDVerifier:
             logger.error(f"SheerID request gagal: {e}")
             raise
 
+    @staticmethod
+    def parse_error_message(error_data: Dict) -> str:
+        """Parse error response menjadi pesan yang user-friendly"""
+        if not isinstance(error_data, dict):
+            return str(error_data)
+            
+        error_ids = error_data.get("errorIds", [])
+        
+        if "invalidStep" in error_ids:
+            return "Link verifikasi sudah tidak valid atau sudah pernah digunakan. Silakan buat verifikasi baru."
+        if "emailAlreadyUsed" in error_ids or "emailInUse" in error_ids:
+            return "Email sudah pernah digunakan. Gunakan email lain atau tunggu beberapa saat."
+        if "organizationNotFound" in error_ids:
+            return "Sekolah tidak ditemukan. Silakan coba lagi."
+        if "invalidBirthDate" in error_ids:
+            return "Tanggal lahir tidak valid."
+        if "rateLimitExceeded" in error_ids:
+            return "Terlalu banyak percobaan. Tunggu beberapa menit dan coba lagi."
+        if "systemError" in error_ids:
+            return "Error sistem SheerID. Silakan coba lagi nanti."
+        if error_ids:
+            return f"Error: {', '.join(error_ids)}. Hubungi admin jika masalah berlanjut."
+        
+        return "Error tidak diketahui. Silakan coba lagi atau hubungi admin."
+
     def _upload_to_s3(self, upload_url: str, content: bytes, mime_type: str) -> bool:
         """
         Upload file ke S3
@@ -185,11 +210,12 @@ class SheerIDVerifier:
             )
 
             if step2_status != 200:
-                raise Exception(f"Langkah 2 gagal (status code {step2_status}): {step2_data}")
+                error_msg = self.parse_error_message(step2_data)
+                raise Exception(f"Gagal submit informasi guru: {error_msg}")
 
             if step2_data.get('currentStep') == 'error':
-                error_msg = ', '.join(step2_data.get('errorIds', ['Unknown error']))
-                raise Exception(f"Langkah 2 error: {error_msg}")
+                error_msg = self.parse_error_message(step2_data)
+                raise Exception(f"Gagal submit informasi guru: {error_msg}")
 
             logger.info(f"✓ Langkah 2 selesai: {step2_data.get('currentStep')}")
             current_step = step2_data.get('currentStep', current_step)
