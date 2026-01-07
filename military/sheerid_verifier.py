@@ -155,6 +155,69 @@ class SheerIDVerifier:
         
         return "Terjadi error yang tidak diketahui. Silakan coba lagi atau hubungi admin."
 
+    def check_status(self) -> Dict:
+        """Cek status verifikasi saat ini"""
+        try:
+            logger.info(f"Cek status verifikasi ID: {self.verification_id}")
+            
+            # GET request untuk cek status
+            data, status_code = self._sheerid_request(
+                "GET",
+                f"https://services.sheerid.com/rest/v2/verification/{self.verification_id}",
+            )
+            
+            if status_code != 200:
+                logger.error(f"❌ Gagal cek status (status code {status_code}): {data}")
+                error_msg = self.parse_error_message(data) if isinstance(data, dict) else str(data)
+                return {
+                    "success": False,
+                    "message": f"Gagal cek status: {error_msg}",
+                }
+            
+            current_step = data.get("currentStep")
+            redirect_url = data.get("redirectUrl")
+            
+            logger.info(f"Status saat ini: {current_step}")
+            
+            if current_step == "success" or redirect_url:
+                logger.info("✅ Verifikasi berhasil!")
+                return {
+                    "success": True,
+                    "redirect_url": redirect_url,
+                    "message": "Verifikasi military berhasil!",
+                    "data": data,
+                }
+            elif current_step == "emailLoop":
+                logger.info("📧 Masih menunggu verifikasi email")
+                return {
+                    "success": False,
+                    "pending": True,
+                    "message": "Masih menunggu verifikasi email. Silakan cek inbox dan klik link verifikasi.",
+                    "data": data,
+                }
+            elif current_step == "pending":
+                logger.info("⏳ Menunggu review manual")
+                return {
+                    "success": False,
+                    "pending": True,
+                    "message": "Dokumen menunggu review manual dari SheerID.",
+                    "data": data,
+                }
+            else:
+                logger.warning(f"⚠️ Status: {current_step}")
+                return {
+                    "success": False,
+                    "message": f"Status verifikasi: {current_step}",
+                    "data": data,
+                }
+                
+        except Exception as e:
+            logger.error(f"Exception saat cek status: {e}")
+            return {
+                "success": False,
+                "message": f"Error: {str(e)}",
+            }
+
     def verify(
         self,
         first_name: str = None,

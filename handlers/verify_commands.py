@@ -703,3 +703,60 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
             f"❌ Terjadi error saat proses: {str(e)}\n\n"
             f"Telah dikembalikan {VERIFY_COST} token"
         )
+
+
+async def check_verif5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle command /checkVerif5 - Cek status ChatGPT Military verification"""
+    user_id = update.effective_user.id
+
+    if db.is_user_blocked(user_id):
+        await update.message.reply_text("Anda telah dibanned, tidak bisa menggunakan fitur ini.")
+        return
+
+    if not db.user_exists(user_id):
+        await update.message.reply_text("Silakan hubungi admin untuk registrasi terlebih dahulu.")
+        return
+
+    if not context.args:
+        await update.message.reply_text(
+            "❌ Format salah!\n\n"
+            "Penggunaan: /checkVerif5 <link>\n\n"
+            "Contoh:\n"
+            "/checkVerif5 https://verify.sheerid.com/chatgpt-military/?verificationId=xxxxx\n\n"
+            "Gunakan command ini setelah klik link verifikasi di email untuk cek apakah verifikasi sudah selesai."
+        )
+        return
+
+    url = context.args[0]
+    verification_id = MilitaryVerifier.parse_verification_id(url)
+    
+    if not verification_id:
+        await update.message.reply_text("Link SheerID tidak valid, silakan cek dan coba lagi.")
+        return
+
+    processing_msg = await update.message.reply_text(
+        f"🔍 Mengecek status verifikasi...\nID: {verification_id}"
+    )
+
+    try:
+        verifier = MilitaryVerifier(verification_id)
+        result = await asyncio.to_thread(verifier.check_status)
+
+        if result["success"]:
+            result_msg = "✅ Verifikasi military berhasil!\n\n"
+            if result.get("redirect_url"):
+                result_msg += f"Link redirect:\n{result['redirect_url']}"
+            await processing_msg.edit_text(result_msg)
+        elif result.get("pending"):
+            await processing_msg.edit_text(
+                f"⏳ {result.get('message', 'Masih menunggu verifikasi')}"
+            )
+        else:
+            await processing_msg.edit_text(
+                f"❌ {result.get('message', 'Status tidak diketahui')}"
+            )
+    except Exception as e:
+        logger.error("Error saat cek status verifikasi military: %s", e)
+        await processing_msg.edit_text(
+            f"❌ Terjadi error: {str(e)}"
+        )
