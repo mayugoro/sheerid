@@ -688,10 +688,11 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
                     "📧 Data veteran berhasil disubmit!\n\n"
                     f"✉️ Silakan cek email: {email}\n"
                     "Klik link verifikasi dari SheerID.\n\n"
-                    "⏱️ Setelah klik link di email, kirim URL lengkap dengan emailToken atau cukup kirim angka tokennya saja dalam 60 detik ke sini.\n\n"
-                    "Contoh:\n"
-                    "- Kirim full URL: https://services.sheerid.com/verify/...?verificationId=xxx&emailToken=225513\n"
-                    "- Atau kirim token saja: 225513"
+                    "⏱️ Setelah klik link di email, Anda akan diarahkan ke halaman dengan emailToken di URL.\n"
+                    "Kirim ANGKA TOKEN saja (tanpa parameter) dalam 60 detik ke sini.\n\n"
+                    "Contoh: Jika URL redirect-nya\n"
+                    "https://...?verificationId=xxx&emailToken=225513\n\n"
+                    "Cukup kirim: 225513"
                 )
                 await processing_msg.edit_text(result_msg)
                 
@@ -835,7 +836,7 @@ async def handle_military_token_input(update: Update, context: ContextTypes.DEFA
             email_token = text
         else:
             await update.message.reply_text(
-                "❌ Format token tidak valid. Kirim URL lengkap dengan emailToken atau cukup angka tokennya saja.\n\n"
+                "❌ Format tidak valid. Kirim ANGKA TOKEN saja.\n\n"
                 "Contoh: 225513"
             )
             return
